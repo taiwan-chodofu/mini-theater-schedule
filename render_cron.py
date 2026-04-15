@@ -67,7 +67,7 @@ def parse_eigacom(html, target_date=None):
             txt = td.get_text(strip=True)
             if not txt.startswith(today_label):
                 continue
-            parts = txt.split("~")
+            parts = txt.split("\uff5e")
             before_end = parts[0] if parts else txt
             times = re.findall(r"(\d{1,2}:\d{2})", before_end)
             for t in times:
