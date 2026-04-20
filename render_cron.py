@@ -142,7 +142,8 @@ def generate_html(data):
         nav = build_nav_links(data[d])
         return build_full_html(date_str, "", "", panel, nav)
     else:
-        tab_html = ""
+        tab_inputs_labels = ""
+        tab_panels = ""
         for idx, d in enumerate(TARGET_DATES):
             label = f"{d.month}/{d.day}({weekday_jp[d.weekday()]})"
             checked = " checked" if idx == 0 else ""
@@ -150,13 +151,19 @@ def generate_html(data):
             d_type = "平日" if is_wd else "休日"
             tf = "18-22時" if is_wd else "終日"
             panel = build_day_panel(data[d], d_type, tf)
-            tab_html += (
+            nav_in = build_nav_links(data[d])
+            tab_inputs_labels += (
                 f'<input type="radio" name="tabs" id="tab{idx}"'
                 f'{checked} class="tab-input">\n'
                 f'<label for="tab{idx}" class="tab-label">{label}</label>\n'
-                f'<div class="tab-panel">{panel}</div>\n'
             )
-        nav = build_nav_links(data[TARGET_DATES[0]])
+            tab_panels += (
+                f'<div class="tab-panel" id="p{idx}">'
+                f'<nav class="area-nav">{nav_in}</nav>'
+                f'{panel}</div>\n'
+            )
+        tab_html = tab_inputs_labels + tab_panels
+        nav = ""
         return build_full_html(date_str, "", "", tab_html, nav)
 
 
