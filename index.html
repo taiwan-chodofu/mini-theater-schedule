@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mini Theater Schedule - 2026年04月19日</title>
+<title>Mini Theater Schedule - 2026年04月17日</title>
 <style>
 :root {
   --bg: #0c0c0f; --card: #16161a; --card-head: #1a1a2e;
@@ -39,7 +39,10 @@ body {
   background: var(--time-bg);
 }
 .tab-panel { display: none; }
-.tab-input:checked + .tab-label + .tab-panel { display: block; }
+.tab-input:nth-of-type(1):checked ~ #p0 { display: block; }
+.tab-input:nth-of-type(2):checked ~ #p1 { display: block; }
+.tab-input:nth-of-type(3):checked ~ #p2 { display: block; }
+.tab-input:nth-of-type(4):checked ~ #p3 { display: block; }
 .day-info {
   text-align: center; font-size: 11px; color: var(--sub);
   padding: 6px 0; margin-top: 4px;
@@ -119,14 +122,23 @@ body {
 <body>
 <header class="hdr">
   <h1>Mini Theater Schedule</h1>
-  <div class="date">2026年04月19日</div>
+  <div class="date">2026年04月17日</div>
 </header>
 <nav class="area-nav"></nav>
 <div class="tabs">
-<div class="day-info">休日 / 終日</div>
+<input type="radio" name="tabs" id="tab0" checked class="tab-input">
+<label for="tab0" class="tab-label">4/17(金)</label>
+<input type="radio" name="tabs" id="tab1" class="tab-input">
+<label for="tab1" class="tab-label">4/18(土)</label>
+<input type="radio" name="tabs" id="tab2" class="tab-input">
+<label for="tab2" class="tab-label">4/19(日)</label>
+<div class="tab-panel" id="p0"><nav class="area-nav"><a href="#area-新宿" class="nav-link">新宿</a><a href="#area-有楽町・日比谷・銀座" class="nav-link">有楽町・日比谷・銀座</a><a href="#area-渋谷・道玄坂" class="nav-link">渋谷・道玄坂</a><a href="#area-目黒・恵比寿" class="nav-link">目黒・恵比寿</a><a href="#area-池袋・大塚" class="nav-link">池袋・大塚</a><a href="#area-神保町・御茶ノ水" class="nav-link">神保町・御茶ノ水</a><a href="#area-下北沢" class="nav-link">下北沢</a><a href="#area-高田馬場" class="nav-link">高田馬場</a><a href="#area-飯田橋" class="nav-link">飯田橋</a><a href="#area-下高井戸" class="nav-link">下高井戸</a><a href="#area-東中野" class="nav-link">東中野</a><a href="#area-大森" class="nav-link">大森</a><a href="#area-菊川" class="nav-link">菊川</a><a href="#area-田端" class="nav-link">田端</a><a href="#area-北千住" class="nav-link">北千住</a><a href="#area-品川・大井町" class="nav-link">品川・大井町</a><a href="#area-横浜" class="nav-link">横浜</a></nav><div class="day-info">平日 / 18-22時</div><div class="area-header" id="area-新宿">新宿</div><div class="area-header" id="area-有楽町・日比谷・銀座">有楽町・日比谷・銀座</div><div class="area-header" id="area-渋谷・道玄坂">渋谷・道玄坂</div><div class="area-header" id="area-目黒・恵比寿">目黒・恵比寿</div><div class="area-header" id="area-池袋・大塚">池袋・大塚</div><div class="area-header" id="area-神保町・御茶ノ水">神保町・御茶ノ水</div><div class="area-header" id="area-下北沢">下北沢</div><div class="area-header" id="area-高田馬場">高田馬場</div><div class="area-header" id="area-飯田橋">飯田橋</div><div class="area-header" id="area-下高井戸">下高井戸</div><div class="area-header" id="area-東中野">東中野</div><div class="area-header" id="area-大森">大森</div><div class="area-header" id="area-菊川">菊川</div><div class="area-header" id="area-田端">田端</div><div class="area-header" id="area-北千住">北千住</div><div class="area-header" id="area-品川・大井町">品川・大井町</div><div class="area-header" id="area-横浜">横浜</div></div>
+<div class="tab-panel" id="p1"><nav class="area-nav"><a href="#area-新宿" class="nav-link">新宿</a><a href="#area-有楽町・日比谷・銀座" class="nav-link">有楽町・日比谷・銀座</a><a href="#area-渋谷・道玄坂" class="nav-link">渋谷・道玄坂</a><a href="#area-目黒・恵比寿" class="nav-link">目黒・恵比寿</a><a href="#area-池袋・大塚" class="nav-link">池袋・大塚</a><a href="#area-神保町・御茶ノ水" class="nav-link">神保町・御茶ノ水</a><a href="#area-下北沢" class="nav-link">下北沢</a><a href="#area-高田馬場" class="nav-link">高田馬場</a><a href="#area-飯田橋" class="nav-link">飯田橋</a><a href="#area-下高井戸" class="nav-link">下高井戸</a><a href="#area-東中野" class="nav-link">東中野</a><a href="#area-大森" class="nav-link">大森</a><a href="#area-菊川" class="nav-link">菊川</a><a href="#area-田端" class="nav-link">田端</a><a href="#area-北千住" class="nav-link">北千住</a><a href="#area-品川・大井町" class="nav-link">品川・大井町</a><a href="#area-横浜" class="nav-link">横浜</a></nav><div class="day-info">休日 / 終日</div><div class="area-header" id="area-新宿">新宿</div><div class="area-header" id="area-有楽町・日比谷・銀座">有楽町・日比谷・銀座</div><div class="area-header" id="area-渋谷・道玄坂">渋谷・道玄坂</div><div class="area-header" id="area-目黒・恵比寿">目黒・恵比寿</div><div class="area-header" id="area-池袋・大塚">池袋・大塚</div><div class="area-header" id="area-神保町・御茶ノ水">神保町・御茶ノ水</div><div class="area-header" id="area-下北沢">下北沢</div><div class="area-header" id="area-高田馬場">高田馬場</div><div class="area-header" id="area-飯田橋">飯田橋</div><div class="area-header" id="area-下高井戸">下高井戸</div><div class="area-header" id="area-東中野">東中野</div><div class="area-header" id="area-大森">大森</div><div class="area-header" id="area-菊川">菊川</div><div class="area-header" id="area-田端">田端</div><div class="area-header" id="area-北千住">北千住</div><div class="area-header" id="area-品川・大井町">品川・大井町</div><div class="area-header" id="area-横浜">横浜</div></div>
+<div class="tab-panel" id="p2"><nav class="area-nav"><a href="#area-新宿" class="nav-link">新宿</a><a href="#area-有楽町・日比谷・銀座" class="nav-link">有楽町・日比谷・銀座</a><a href="#area-渋谷・道玄坂" class="nav-link">渋谷・道玄坂</a><a href="#area-目黒・恵比寿" class="nav-link">目黒・恵比寿</a><a href="#area-池袋・大塚" class="nav-link">池袋・大塚</a><a href="#area-神保町・御茶ノ水" class="nav-link">神保町・御茶ノ水</a><a href="#area-下北沢" class="nav-link">下北沢</a><a href="#area-高田馬場" class="nav-link">高田馬場</a><a href="#area-飯田橋" class="nav-link">飯田橋</a><a href="#area-下高井戸" class="nav-link">下高井戸</a><a href="#area-東中野" class="nav-link">東中野</a><a href="#area-大森" class="nav-link">大森</a><a href="#area-菊川" class="nav-link">菊川</a><a href="#area-田端" class="nav-link">田端</a><a href="#area-北千住" class="nav-link">北千住</a><a href="#area-品川・大井町" class="nav-link">品川・大井町</a><a href="#area-横浜" class="nav-link">横浜</a></nav><div class="day-info">休日 / 終日</div><div class="area-header" id="area-新宿">新宿</div><div class="area-header" id="area-有楽町・日比谷・銀座">有楽町・日比谷・銀座</div><div class="area-header" id="area-渋谷・道玄坂">渋谷・道玄坂</div><div class="area-header" id="area-目黒・恵比寿">目黒・恵比寿</div><div class="area-header" id="area-池袋・大塚">池袋・大塚</div><div class="area-header" id="area-神保町・御茶ノ水">神保町・御茶ノ水</div><div class="area-header" id="area-下北沢">下北沢</div><div class="area-header" id="area-高田馬場">高田馬場</div><div class="area-header" id="area-飯田橋">飯田橋</div><div class="area-header" id="area-下高井戸">下高井戸</div><div class="area-header" id="area-東中野">東中野</div><div class="area-header" id="area-大森">大森</div><div class="area-header" id="area-菊川">菊川</div><div class="area-header" id="area-田端">田端</div><div class="area-header" id="area-北千住">北千住</div><div class="area-header" id="area-品川・大井町">品川・大井町</div><div class="area-header" id="area-横浜">横浜</div></div>
+
 </div>
 <footer class="ftr">
-  23:56 updated / source: eiga.com<br>
+  11:29 updated / source: eiga.com<br>
   ※ schedules may change. check official sites.
 </footer>
 </body>
