@@ -281,7 +281,7 @@ HEADERS = {
 
 TODAY = date.today()
 # テスト用: 金曜シミュレート（確認後に戻す）
-# TODAY = date(2026, 4, 10)
+# TODAY = date(2026, 4, 17)
 IS_WEEKDAY = TODAY.weekday() < 5  # 月〜金 = True
 
 # 日本の祝日（2026年）
@@ -974,7 +974,9 @@ def save_to_html(data):
         )
     else:
         # 複数日: radioタブで切り替え
-        tab_html = ""
+        # ラベルを先に全て並べ、パネルを後に並べる
+        tab_inputs_labels = ""
+        tab_panels = ""
         for idx, d in enumerate(TARGET_DATES):
             d_label = f"{d.month}/{d.day}({weekday_jp[d.weekday()]})"
             d_id = f"tab{idx}"
@@ -983,18 +985,21 @@ def save_to_html(data):
             d_type = "平日" if is_wd else "休日"
             time_filter = "18-22時" if is_wd else "終日"
             items = data[d]
+            nav_in_panel = build_nav_links(items)
             panel_html = build_day_panel(items, d_type, time_filter)
-            tab_html += (
+            tab_inputs_labels += (
                 f'<input type="radio" name="tabs" id="{d_id}"'
                 f'{checked} class="tab-input">\n'
                 f'<label for="{d_id}" class="tab-label">'
                 f'{d_label}</label>\n'
             )
-            tab_html += (
-                f'<div class="tab-panel">{panel_html}</div>\n'
+            tab_panels += (
+                f'<div class="tab-panel" id="p{idx}">'
+                f'<nav class="area-nav">{nav_in_panel}</nav>'
+                f'{panel_html}</div>\n'
             )
-        first_items = data[TARGET_DATES[0]]
-        nav_links = build_nav_links(first_items)
+        tab_html = tab_inputs_labels + tab_panels
+        nav_links = ""  # ナビは各パネル内に配置済み
         html_content = build_full_html(
             date_str, "", "", tab_html, nav_links
         )
@@ -1197,7 +1202,10 @@ body {{
   background: var(--time-bg);
 }}
 .tab-panel {{ display: none; }}
-.tab-input:checked + .tab-label + .tab-panel {{ display: block; }}
+.tab-input:nth-of-type(1):checked ~ #p0 {{ display: block; }}
+.tab-input:nth-of-type(2):checked ~ #p1 {{ display: block; }}
+.tab-input:nth-of-type(3):checked ~ #p2 {{ display: block; }}
+.tab-input:nth-of-type(4):checked ~ #p3 {{ display: block; }}
 .day-info {{
   text-align: center; font-size: 11px; color: var(--sub);
   padding: 6px 0; margin-top: 4px;
