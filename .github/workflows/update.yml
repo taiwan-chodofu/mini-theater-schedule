@@ -9,10 +9,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests beautifulsoup4
-      - run: python render_cron.py
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4 playwright
+
+      - name: Install Playwright browsers
+        run: playwright install chromium
+
+      - name: Run schedule update
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_OWNER: taiwan-chodofu
+          GITHUB_REPO: mini-theater-schedule
+        run: python render_cron_v2.py
+
+      - name: Retry on failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_OWNER: taiwan-chodofu
+          GITHUB_REPO: mini-theater-schedule
+        run: |
+          echo "First attempt failed, retrying in 60s..."
+          sleep 60
+          python render_cron_v2.py
