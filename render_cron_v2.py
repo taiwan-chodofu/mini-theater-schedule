@@ -45,14 +45,28 @@ def fetch_html_playwright(url):
                 user_agent=(
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                     "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/125.0.0.0 Safari/537.36"
+                    "Chrome/126.0.0.0 Safari/537.36"
                 ),
                 viewport={"width": 1280, "height": 800},
+                extra_http_headers={
+                    "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+                    "Sec-CH-UA": '"Chromium";v="126", "Not/A)Brand";v="8"',
+                    "Sec-CH-UA-Mobile": "?0",
+                    "Sec-CH-UA-Platform": '"Windows"',
+                    "Sec-Fetch-Dest": "document",
+                    "Sec-Fetch-Mode": "navigate",
+                    "Sec-Fetch-Site": "none",
+                    "Sec-Fetch-User": "?1",
+                },
             )
             page = context.new_page()
             page.goto(url, wait_until="domcontentloaded", timeout=45000)
             # eiga.comのスケジュールテーブルが読み込まれるまで待機
-            page.wait_for_timeout(5000)
+            try:
+                page.wait_for_selector('section[id^="m"]', timeout=15000)
+            except Exception:
+                pass  # タイムアウトしても続行（データなしの可能性）
+            page.wait_for_timeout(3000)
             html = page.content()
             browser.close()
             return html
@@ -67,7 +81,7 @@ def fetch_html_requests(url):
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/125.0.0.0 Safari/537.36"
+            "Chrome/126.0.0.0 Safari/537.36"
         ),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
@@ -195,7 +209,16 @@ def collect_all():
                 theater_total += 1
 
         total_showings += theater_total
-        print(f" {theater_total}")
+        if theater_total == 0 and html:
+            from bs4 import BeautifulSoup as BS2
+            soup2 = BS2(html, "html.parser")
+            secs = soup2.find_all("section", id=re.compile(r"^m\d+"))
+            tds_sample = []
+            if secs:
+                tds_sample = [td.get_text(strip=True)[:40] for td in secs[0].find_all("td")[:3]]
+            print(f" 0 [DEBUG sections={len(secs)}, tds={tds_sample}]")
+        else:
+            print(f" {theater_total}")
 
         # Rate limiting: eiga.comに負荷をかけすぎない
         time.sleep(1)
