@@ -88,6 +88,13 @@ def fetch_html_requests(url):
         "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1",
+        "Sec-CH-UA": '"Chromium";v="126", "Not/A)Brand";v="8"',
+        "Sec-CH-UA-Mobile": "?0",
+        "Sec-CH-UA-Platform": '"Windows"',
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
     }
     try:
         resp = requests.get(url, headers=headers, timeout=20)
@@ -156,10 +163,10 @@ def collect_all():
     for name, info in THEATERS.items():
         print(f"  [{name}]...", end="", flush=True)
 
-        # Playwright優先、失敗時はrequestsフォールバック
-        html = fetch_html_playwright(info["eigacom_url"])
+        # requests優先（GitHub Actionsでbot検知されにくい）、失敗時はPlaywrightフォールバック
+        html = fetch_html_requests(info["eigacom_url"])
         if not html:
-            html = fetch_html_requests(info["eigacom_url"])
+            html = fetch_html_playwright(info["eigacom_url"])
 
         if not html:
             for d in TARGET_DATES:
