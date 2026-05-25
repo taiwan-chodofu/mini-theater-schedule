@@ -12,7 +12,7 @@
 
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 import re
 import json
 import os
@@ -279,7 +279,18 @@ HEADERS = {
     )
 }
 
-TODAY = date.today()
+
+
+# JST固定（GitHub Actions runnerはUTCで動くため、date.today()だと
+# JST早朝の実行時にUTC前日扱いになりeiga.comの日付ヘッダーと噛み合わない）
+JST = timezone(timedelta(hours=9))
+
+
+def today_jst():
+    """JST基準の今日の日付を返す。"""
+    return datetime.now(JST).date()
+
+TODAY = today_jst()
 # テスト用: 金曜シミュレート（確認後に戻す）
 # TODAY = date(2026, 4, 17)
 IS_WEEKDAY = TODAY.weekday() < 5  # 月〜金 = True
@@ -1292,7 +1303,7 @@ body {{
 {tab_panels}
 </div>
 <footer class="ftr">
-  {datetime.now().strftime('%H:%M')} updated / source: eiga.com<br>
+  {datetime.now(JST).strftime('%H:%M')} updated / source: eiga.com<br>
   ※ schedules may change. check official sites.
 </footer>
 </body>

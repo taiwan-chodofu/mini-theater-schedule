@@ -21,9 +21,10 @@ from theater_schedule import (
     get_area, build_movie_html, build_day_panel,
     build_nav_links, build_full_html,
     fetch_movie_description,
+    today_jst,
 )
 
-TODAY = date.today()
+TODAY = today_jst()
 TARGET_DATES = get_target_dates()
 
 # --- 最小データ閾値 ---
