@@ -4,15 +4,18 @@ on:
     - cron: "0 22 * * *"  # UTC 22:00 = JST 07:00
   workflow_dispatch:  # manual trigger
 
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Tokyo
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -24,7 +27,7 @@ jobs:
 
       - name: Run schedule update
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER: taiwan-chodofu
           GITHUB_REPO: mini-theater-schedule
         run: python render_cron_v2.py
@@ -32,7 +35,7 @@ jobs:
       - name: Retry on failure
         if: failure()
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER: taiwan-chodofu
           GITHUB_REPO: mini-theater-schedule
         run: |
