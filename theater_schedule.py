@@ -16,6 +16,7 @@ from datetime import datetime, date, timezone, timedelta
 import re
 import json
 import os
+import html
 try:
     from playwright.sync_api import sync_playwright
     HAS_PLAYWRIGHT = True
@@ -29,60 +30,80 @@ THEATERS = {
         "url_top": "https://www.imageforum.co.jp/theatre/",
         "station": "渋谷駅（東口 徒歩8分）",
         "address": "東京都渋谷区渋谷2-10-2",
+        "lat": 35.66037,
+        "lng": 139.707047,
     },
     "下高井戸シネマ": {
         "eigacom_url": "https://eiga.com/theater/13/130606/3064/",
         "url_top": "https://www.shimotakaidocinema.com/",
         "station": "下高井戸駅（京王線・東急世田谷線 徒歩2分）",
         "address": "東京都世田谷区松原3-27-26",
+        "lat": 35.665997,
+        "lng": 139.642639,
     },
     "目黒シネマ": {
         "eigacom_url": "https://eiga.com/theater/13/130609/3069/",
         "url_top": "http://www.okura-movie.co.jp/meguro_cinema/",
         "station": "目黒駅（JR・東急目黒線 徒歩3分）",
         "address": "東京都品川区上大崎2-24-15 目黒西口ビルB1",
+        "lat": 35.634987,
+        "lng": 139.714874,
     },
     "早稲田松竹": {
         "eigacom_url": "https://eiga.com/theater/13/130611/3071/",
         "url_top": "https://wasedashochiku.co.jp/",
         "station": "高田馬場駅（JR・西武新宿線・東西線 徒歩5分）",
         "address": "東京都新宿区高田馬場1-5-16",
+        "lat": 35.711731,
+        "lng": 139.708176,
     },
     "キネカ大森": {
         "eigacom_url": "https://eiga.com/theater/13/130713/3095/",
         "url_top": "https://www.ttcg.jp/cineka_omori/",
         "station": "大森駅（JR京浜東北線 徒歩1分）",
         "address": "東京都品川区南大井6-27-25 西友大森店5階",
+        "lat": 35.588146,
+        "lng": 139.729919,
     },
     "ストレンジャー": {
         "eigacom_url": "https://eiga.com/theater/13/130718/3319/",
         "url_top": "https://stranger.jp/",
         "station": "菊川駅（都営新宿線 徒歩1分）",
         "address": "東京都墨田区菊川3-7-1 菊川会館ビル1F",
+        "lat": 35.688,
+        "lng": 139.806183,
     },
     "ユーロスペース": {
         "eigacom_url": "https://eiga.com/theater/13/130301/3044/",
         "url_top": "https://www.eurospace.co.jp/",
         "station": "渋谷駅（道玄坂方面 徒歩10分）",
         "address": "東京都渋谷区円山町1-5 KINOHAUS 2F",
+        "lat": 35.659393,
+        "lng": 139.695404,
     },
     "K's cinema": {
         "eigacom_url": "https://eiga.com/theater/13/130201/3018/",
         "url_top": "https://www.ks-cinema.com/",
         "station": "新宿駅（東口 徒歩3分）",
         "address": "東京都新宿区新宿3-35-13 3F",
+        "lat": 35.69022,
+        "lng": 139.702652,
     },
     "新宿武蔵野館": {
         "eigacom_url": "https://eiga.com/theater/13/130201/3026/",
         "url_top": "https://shinjuku.musashino-k.jp/",
         "station": "新宿駅（東口 徒歩2分）",
         "address": "東京都新宿区新宿3-27-10 武蔵野ビル3F",
+        "lat": 35.691216,
+        "lng": 139.702286,
     },
     "シネマ・ジャック＆ベティ": {
         "eigacom_url": "https://eiga.com/theater/14/140108/3247/",
         "url_top": "https://www.jackandbetty.net/",
         "station": "黄金町駅（京急線 徒歩5分）",
         "address": "神奈川県横浜市中区若葉町3-51",
+        "lat": 35.44046,
+        "lng": 139.626511,
     },
     # --- 千代田区 ---
     "神保町シアター": {
@@ -90,42 +111,56 @@ THEATERS = {
         "url_top": "https://www.shogakukan.co.jp/jinbocho-theater/",
         "station": "神保町駅（都営三田線・新宿線・半蔵門線 徒歩3分）",
         "address": "東京都千代田区神田神保町1-23",
+        "lat": 35.695042,
+        "lng": 139.760986,
     },
     "ヒューマントラストシネマ有楽町": {
         "eigacom_url": "https://eiga.com/theater/13/130102/3004/",
         "url_top": "https://ttcg.jp/human_yurakucho/",
         "station": "有楽町駅（JR 徒歩1分）",
         "address": "東京都千代田区有楽町2-7-1 イトシアプラザ4F",
+        "lat": 35.674213,
+        "lng": 139.763657,
     },
     "角川シネマ有楽町": {
         "eigacom_url": "https://eiga.com/theater/13/130102/3248/",
         "url_top": "https://www.kadokawa-cinema.jp/yurakucho/",
         "station": "有楽町駅（JR 徒歩1分）",
         "address": "東京都千代田区有楽町1-11-1 読売会館8F",
+        "lat": 35.675388,
+        "lng": 139.762878,
     },
     "TOHOシネマズ シャンテ": {
         "eigacom_url": "https://eiga.com/theater/13/130102/3006/",
         "url_top": "https://hlo.tohotheater.jp/net/schedule/009/TNPI2000J01.do",
         "station": "日比谷駅（東京メトロ 徒歩2分）",
         "address": "東京都千代田区有楽町1-2-2",
+        "lat": 35.672913,
+        "lng": 139.759964,
     },
     "TOHOシネマズ 日比谷": {
         "eigacom_url": "https://eiga.com/theater/13/130102/3281/",
         "url_top": "https://hlo.tohotheater.jp/net/schedule/076/TNPI2000J01.do",
         "station": "日比谷駅（東京メトロ 直結）",
         "address": "東京都千代田区有楽町1-1-2 東京ミッドタウン日比谷4F",
+        "lat": 35.674088,
+        "lng": 139.759552,
     },
     "アテネ・フランセ文化センター": {
         "eigacom_url": "https://eiga.com/theater/13/130614/3299/",
         "url_top": "http://www.athenee.net/culturalcenter/",
         "station": "御茶ノ水駅（JR 徒歩5分）",
         "address": "東京都千代田区神田駿河台2-11 アテネ・フランセ4F",
+        "lat": 35.700912,
+        "lng": 139.758102,
     },
     "シネマリス": {
         "eigacom_url": "https://eiga.com/theater/13/130710/3331/",
         "url_top": "https://www.cinemairis.com/",
         "station": "神保町駅（都営三田線・新宿線・半蔵門線 徒歩5分）",
         "address": "東京都千代田区神田小川町3-14-3 ilusa B1F",
+        "lat": 35.696548,
+        "lng": 139.760818,
     },
     # --- 中央区 ---
     "シネスイッチ銀座": {
@@ -133,12 +168,16 @@ THEATERS = {
         "url_top": "https://www.cineswitch.com/",
         "station": "銀座駅（東京メトロ 徒歩1分）",
         "address": "東京都中央区銀座4-4-5",
+        "lat": 35.672066,
+        "lng": 139.765121,
     },
     "国立映画アーカイブ": {
         "eigacom_url": "https://eiga.com/theater/13/130101/3300/",
         "url_top": "https://www.nfaj.go.jp/",
         "station": "京橋駅（東京メトロ 徒歩1分）",
         "address": "東京都中央区京橋3-7-6",
+        "lat": 35.675701,
+        "lng": 139.770599,
     },
     # --- 新宿区（追加分） ---
     "シネマート新宿": {
@@ -146,18 +185,24 @@ THEATERS = {
         "url_top": "https://www.cinemart.co.jp/theater/shinjuku/",
         "station": "新宿三丁目駅（東京メトロ 徒歩3分）",
         "address": "東京都新宿区新宿3-13-3 新宿文化ビル6F・7F",
+        "lat": 35.691875,
+        "lng": 139.705612,
     },
     "テアトル新宿": {
         "eigacom_url": "https://eiga.com/theater/13/130201/3022/",
         "url_top": "https://ttcg.jp/theatre_shinjuku/",
         "station": "新宿三丁目駅（東京メトロ 徒歩3分）",
         "address": "東京都新宿区新宿3-14-20 新宿テアトルビルB1F",
+        "lat": 35.692406,
+        "lng": 139.705215,
     },
     "アンスティチュ・フランセ東京": {
         "eigacom_url": "https://eiga.com/theater/13/130604/3310/",
         "url_top": "https://www.institutfrancais.jp/tokyo/",
         "station": "飯田橋駅（JR・東京メトロ 徒歩7分）",
         "address": "東京都新宿区市谷船河原町15",
+        "lat": 35.698498,
+        "lng": 139.739944,
     },
     # --- 目黒区 ---
     "東京都写真美術館ホール": {
@@ -165,6 +210,8 @@ THEATERS = {
         "url_top": "https://topmuseum.jp/",
         "station": "恵比寿駅（JR 徒歩7分）",
         "address": "東京都目黒区三田1-13-3 恵比寿ガーデンプレイス内",
+        "lat": 35.642181,
+        "lng": 139.715027,
     },
     # --- 世田谷区 ---
     "下北沢トリウッド": {
@@ -172,12 +219,16 @@ THEATERS = {
         "url_top": "https://www.tollywood.jp/",
         "station": "下北沢駅（小田急線・京王井の頭線 徒歩5分）",
         "address": "東京都世田谷区代沢5-32-5 シェルボ下北沢2F",
+        "lat": 35.658775,
+        "lng": 139.667587,
     },
     "シモキタ-エキマエ-シネマ K2": {
         "eigacom_url": "https://eiga.com/theater/13/130613/3317/",
         "url_top": "https://k2.shimokita-ekimae.com/",
         "station": "下北沢駅（小田急線・京王井の頭線 徒歩1分）",
         "address": "東京都世田谷区北沢2-21-22 (tefu) lounge 2F",
+        "lat": 35.660793,
+        "lng": 139.666656,
     },
     # --- 渋谷区（追加分） ---
     "Bunkamuraル・シネマ 渋谷宮下": {
@@ -185,36 +236,48 @@ THEATERS = {
         "url_top": "https://www.bunkamura.co.jp/cinema/",
         "station": "渋谷駅（JR 徒歩5分）",
         "address": "東京都渋谷区渋谷1-24-12 渋谷東映プラザ7F・9F",
+        "lat": 35.659901,
+        "lng": 139.702164,
     },
     "YEBISU GARDEN CINEMA": {
         "eigacom_url": "https://eiga.com/theater/13/130608/3261/",
         "url_top": "https://www.unitedcinemas.jp/ygc/",
         "station": "恵比寿駅（JR 徒歩5分）",
         "address": "東京都渋谷区恵比寿4-20-2 恵比寿ガーデンプレイス内",
+        "lat": 35.643616,
+        "lng": 139.71254,
     },
     "ヒューマントラストシネマ渋谷": {
         "eigacom_url": "https://eiga.com/theater/13/130301/3042/",
         "url_top": "https://ttcg.jp/human_shibuya/",
         "station": "渋谷駅（JR 徒歩5分）",
         "address": "東京都渋谷区渋谷1-23-16 ココチビル7・8F",
+        "lat": 35.662025,
+        "lng": 139.702377,
     },
     "シネマヴェーラ渋谷": {
         "eigacom_url": "https://eiga.com/theater/13/130301/3298/",
         "url_top": "http://www.cinemavera.com/",
         "station": "渋谷駅（道玄坂方面 徒歩10分）",
         "address": "東京都渋谷区円山町1-5 KINOHAUS 4F",
+        "lat": 35.659393,
+        "lng": 139.695404,
     },
     "渋谷シネクイント": {
         "eigacom_url": "https://eiga.com/theater/13/130301/3283/",
         "url_top": "https://www.cinequinto.com/",
         "station": "渋谷駅（ハチ公口 徒歩5分）",
         "address": "東京都渋谷区宇田川町20-11 渋谷三葉ビル7F",
+        "lat": 35.660923,
+        "lng": 139.699768,
     },
     "ホワイト シネクイント": {
         "eigacom_url": "https://eiga.com/theater/13/130301/3295/",
         "url_top": "https://white-cine-quinto.com/",
         "station": "渋谷駅（ハチ公口 徒歩5分）",
         "address": "東京都渋谷区宇田川町15-1 渋谷パルコ8F",
+        "lat": 35.662212,
+        "lng": 139.699203,
     },
     # --- 中野区 ---
     "ポレポレ東中野": {
@@ -222,6 +285,8 @@ THEATERS = {
         "url_top": "https://pole2.co.jp/",
         "station": "東中野駅（JR 徒歩1分）",
         "address": "東京都中野区東中野4-4-1 ポレポレ坐ビルB1F",
+        "lat": 35.706448,
+        "lng": 139.684586,
     },
     # --- 豊島区 ---
     "池袋シネマ・ロサ": {
@@ -229,18 +294,24 @@ THEATERS = {
         "url_top": "https://www.cinemarosa.net/",
         "station": "池袋駅（西口 徒歩2分）",
         "address": "東京都豊島区西池袋1-37-12 ロサ会館内",
+        "lat": 35.732548,
+        "lng": 139.709366,
     },
     "新文芸坐": {
         "eigacom_url": "https://eiga.com/theater/13/130501/3055/",
         "url_top": "https://www.shin-bungeiza.com/",
         "station": "池袋駅（東口 徒歩3分）",
         "address": "東京都豊島区東池袋1-43-5 マルハン池袋ビル3F",
+        "lat": 35.732601,
+        "lng": 139.713577,
     },
     "シネマハウス大塚": {
         "eigacom_url": "https://eiga.com/theater/13/130616/3311/",
         "url_top": "https://cinemahouse-otsuka.com/",
         "station": "大塚駅（JR 徒歩10分）",
         "address": "東京都豊島区巣鴨4-7-4-101",
+        "lat": 35.735901,
+        "lng": 139.730148,
     },
     # --- 北区 ---
     "CINEMA Chupki TABATA": {
@@ -248,6 +319,8 @@ THEATERS = {
         "url_top": "https://chupki.jpn.org/",
         "station": "田端駅（JR 徒歩5分）",
         "address": "東京都北区東田端2-8-4",
+        "lat": 35.741261,
+        "lng": 139.761688,
     },
     # --- 足立区 ---
     "シネマブルースタジオ": {
@@ -255,6 +328,8 @@ THEATERS = {
         "url_top": "https://www.cinema-st.com/",
         "station": "北千住駅（JR・東京メトロ 徒歩10分）",
         "address": "東京都足立区千住1-4-1 東京芸術センター2F",
+        "lat": 35.746788,
+        "lng": 139.80011,
     },
     # --- 品川区（追加） ---
     "T・ジョイPRINCE品川": {
@@ -262,12 +337,16 @@ THEATERS = {
         "url_top": "https://tjoy.jp/tjoy_prince_shinagawa",
         "station": "品川駅（高輪口 徒歩2分）",
         "address": "東京都港区高輪4-10-30 品川プリンスホテル アネックスタワー3F",
+        "lat": 35.628574,
+        "lng": 139.736984,
     },
     "TOHOシネマズ 大井町": {
         "eigacom_url": "https://eiga.com/theater/13/130703/3333/",
         "url_top": "https://hlo.tohotheater.jp/net/schedule/085/TNPI2000J01.do",
         "station": "大井町駅（JR・りんかい線 徒歩2分）",
         "address": "東京都品川区大井1-2-1 阪急大井町ガーデン4F",
+        "lat": 35.604897,
+        "lng": 139.734665,
     },
 }
 
@@ -823,6 +902,7 @@ def collect_all_schedules():
                     "theater": theater_name,
                     "station": info["station"],
                     "address": info["address"],
+                    "lat": info.get("lat"), "lng": info.get("lng"),
                     "url": info["url_top"],
                     "eigacom_url": url,
                     "title": "(shutoku shippai)",
@@ -841,6 +921,7 @@ def collect_all_schedules():
                     "theater": theater_name,
                     "station": info["station"],
                     "address": info["address"],
+                    "lat": info.get("lat"), "lng": info.get("lng"),
                     "url": info["url_top"],
                     "eigacom_url": url,
                     "title": "(gaitou jikantai no jouei nashi)" if is_wd else "(jouei nashi)",
@@ -862,6 +943,7 @@ def collect_all_schedules():
                     "theater": theater_name,
                     "station": info["station"],
                     "address": info["address"],
+                    "lat": info.get("lat"), "lng": info.get("lng"),
                     "url": info["url_top"],
                     "eigacom_url": url,
                     "title": s["title"],
@@ -970,18 +1052,26 @@ def save_to_html(data):
     weekday_jp = "月火水木金土日"
     date_str = TODAY.strftime('%Y年%m月%d日')
 
-    # 1日分のみの場合はタブ不要
+    area_chips_html = build_area_chips(data.values())
+
+    # 1日分のみの場合はタブ不要（ただしJS処理を揃えるため.tab-panelで統一）
     if len(TARGET_DATES) == 1:
         d = TARGET_DATES[0]
         is_wd = d.weekday() < 5 and d not in HOLIDAYS_2026
         d_type = "平日" if is_wd else "休日"
         time_filter = "18-22時" if is_wd else "終日"
         items = data[d]
+        nav_links = build_nav_links(items)
         panel_html = build_day_panel(items, d_type, time_filter)
-        first_items = items
-        nav_links = build_nav_links(first_items)
+        d_label = f"{d.month}/{d.day}({weekday_jp[d.weekday()]})"
+        tab_html = (
+            f'<div class="tab-panel" id="p0" data-date="{d.isoformat()}"'
+            f' data-date-label="{html.escape(d_label)}" style="display:block">'
+            f'<nav class="area-nav">{nav_links}</nav>'
+            f'{panel_html}</div>\n'
+        )
         html_content = build_full_html(
-            date_str, "", "", panel_html, nav_links
+            date_str, area_chips_html, "", tab_html, ""
         )
     else:
         # 複数日: radioタブで切り替え
@@ -996,8 +1086,9 @@ def save_to_html(data):
             d_type = "平日" if is_wd else "休日"
             time_filter = "18-22時" if is_wd else "終日"
             items = data[d]
-            nav_in_panel = build_nav_links(items)
-            panel_html = build_day_panel(items, d_type, time_filter)
+            id_prefix = f"{d_id}-"
+            nav_in_panel = build_nav_links(items, id_prefix)
+            panel_html = build_day_panel(items, d_type, time_filter, id_prefix)
             tab_inputs_labels += (
                 f'<input type="radio" name="tabs" id="{d_id}"'
                 f'{checked} class="tab-input">\n'
@@ -1005,14 +1096,15 @@ def save_to_html(data):
                 f'{d_label}</label>\n'
             )
             tab_panels += (
-                f'<div class="tab-panel" id="p{idx}">'
+                f'<div class="tab-panel" id="p{idx}" data-date="{d.isoformat()}"'
+                f' data-date-label="{html.escape(d_label)}">'
                 f'<nav class="area-nav">{nav_in_panel}</nav>'
                 f'{panel_html}</div>\n'
             )
         tab_html = tab_inputs_labels + tab_panels
         nav_links = ""  # ナビは各パネル内に配置済み
         html_content = build_full_html(
-            date_str, "", "", tab_html, nav_links
+            date_str, area_chips_html, "", tab_html, nav_links
         )
 
     filename = "index.html"
@@ -1063,7 +1155,16 @@ def get_area(station):
     return "その他"
 
 
-def build_movie_html(m):
+def movie_id(m):
+    """作品を一意に識別するキー（お気に入り等に使用）。"""
+    movie_url = m.get("movie_url", "")
+    mo = re.search(r"/movie/(\d+)", movie_url)
+    if mo:
+        return f"mv{mo.group(1)}"
+    return "t-" + re.sub(r"[^0-9A-Za-z぀-ヿ一-鿿]+", "-", m["title"])
+
+
+def build_movie_html(m, theater_name=""):
     """1作品分のHTMLを生成。"""
     title = m["title"]
     time_str = m["time"] if m["time"] else ""
@@ -1074,10 +1175,11 @@ def build_movie_html(m):
     ])
     if is_fb:
         return ""
+    title_esc = html.escape(title)
     title_link = (
-        f'<a href="{movie_url}" target="_blank"'
-        f' class="mv-title-link">{title}</a>'
-        if movie_url else title
+        f'<a href="{html.escape(movie_url)}" target="_blank"'
+        f' class="mv-title-link">{title_esc}</a>'
+        if movie_url else title_esc
     )
     desc_html = ""
     if desc:
@@ -1085,26 +1187,27 @@ def build_movie_html(m):
         if len(desc) > 50:
             desc_html = (
                 f'<details class="mv-details">'
-                f'<summary class="mv-desc-short">{short}</summary>'
-                f'<p class="mv-desc-full">{desc}</p></details>'
+                f'<summary class="mv-desc-short">{html.escape(short)}</summary>'
+                f'<p class="mv-desc-full">{html.escape(desc)}</p></details>'
             )
         else:
-            desc_html = f'<p class="mv-desc-short">{desc}</p>'
-    badges = "".join(
-        f'<span class="badge">{t}</span>'
-        for t in time_str.split(", ") if t
-    )
+            desc_html = f'<p class="mv-desc-short">{html.escape(desc)}</p>'
+    times = [t for t in time_str.split(", ") if t]
+    badges = "".join(f'<span class="badge">{t}</span>' for t in times)
+    mid = movie_id(m)
+    times_attr = html.escape(" ".join(times))
     return f"""
-      <div class="mv">
+      <div class="mv" data-movie-id="{mid}" data-title="{title_esc.lower()}" data-times="{times_attr}" data-theater="{html.escape(theater_name)}">
         <div class="mv-head">
           <div class="mv-times">{badges}</div>
           <h3 class="mv-title">{title_link}</h3>
+          <button class="fav-btn" data-fav-id="{mid}" data-fav-title="{title_esc}" aria-label="お気に入り登録">&#9734;</button>
         </div>
         {desc_html}
       </div>"""
 
 
-def build_day_panel(items, day_type, time_filter):
+def build_day_panel(items, day_type, time_filter, id_prefix=""):
     """1日分のエリア別映画館カードHTMLを生成。"""
     grouped = {}
     for item in items:
@@ -1113,6 +1216,8 @@ def build_day_panel(items, day_type, time_filter):
             grouped[name] = {
                 "station": item["station"],
                 "address": item["address"],
+                "lat": item.get("lat"),
+                "lng": item.get("lng"),
                 "url": item["url"],
                 "eigacom_url": item.get("eigacom_url", ""),
                 "movies": [],
@@ -1126,14 +1231,14 @@ def build_day_panel(items, day_type, time_filter):
             area_theaters[area] = []
         area_theaters[area].append((th_name, info))
 
-    html = f'<div class="day-info">{day_type} / {time_filter}</div>'
+    out = f'<div class="day-info">{day_type} / {time_filter}</div>'
     for area_name in AREA_ORDER:
         if area_name not in area_theaters:
             continue
-        html += f'<div class="area-header" id="area-{area_name}">{area_name}</div>'
+        out += f'<div class="area-header" id="area-{id_prefix}{area_name}" data-area="{html.escape(area_name)}">{area_name}</div>'
         for th_name, info in area_theaters[area_name]:
             movies = "".join(
-                build_movie_html(m)
+                build_movie_html(m, th_name)
                 for m in sorted(info["movies"], key=lambda x: x["time"])
             )
             if not movies.strip():
@@ -1143,33 +1248,311 @@ def build_day_panel(items, day_type, time_filter):
             links = f'<a href="{url}" target="_blank">公式</a>'
             if eigacom:
                 links += f' <a href="{eigacom}" target="_blank">eiga.com</a>'
-            html += f"""
-    <section class="theater">
+            lat = info.get("lat")
+            lng = info.get("lng")
+            geo_attr = (
+                f' data-lat="{lat}" data-lng="{lng}"' if lat and lng else ""
+            )
+            out += f"""
+    <section class="theater" data-area="{html.escape(area_name)}"{geo_attr}>
       <div class="th-head">
-        <h2>{th_name}</h2>
+        <h2>{html.escape(th_name)}</h2>
         <div class="th-meta">
-          <span>&#x1F689; {info["station"]}</span>
-          <span>&#x1F4CD; {info["address"]}</span>
+          <span>{ICON_TRAIN} {html.escape(info["station"])}</span>
+          <span>{ICON_PIN} {html.escape(info["address"])}</span>
+          <span class="th-dist" hidden></span>
         </div>
         <div class="th-links">{links}</div>
       </div>
       <div class="mv-list">{movies}</div>
     </section>"""
-    return html
+    return out
 
 
-def build_nav_links(items):
+def build_nav_links(items, id_prefix=""):
     """エリアナビリンクを生成。"""
     areas_present = set()
     for item in items:
         areas_present.add(get_area(item["station"]))
     return "".join(
-        f'<a href="#area-{a}" class="nav-link">{a}</a>'
+        f'<a href="#area-{id_prefix}{html.escape(a)}" class="nav-link" data-area="{html.escape(a)}">{a}</a>'
         for a in AREA_ORDER if a in areas_present
     )
 
 
-def build_full_html(date_str, _unused1, _unused2,
+def build_area_chips(all_items):
+    """エリア複数選択フィルター用のチップHTMLを生成（全日程分のエリア集合）。"""
+    areas_present = set()
+    for items in all_items:
+        for item in items:
+            areas_present.add(get_area(item["station"]))
+    return "".join(
+        f'<button class="chip" data-area="{html.escape(a)}">{a}</button>'
+        for a in AREA_ORDER if a in areas_present
+    )
+
+
+ICON_PIN = (
+    '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" '
+    'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    'stroke-linejoin="round" style="vertical-align:-1px"><path '
+    'd="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/>'
+    '<circle cx="12" cy="10" r="2.5"/></svg>'
+)
+ICON_TRAIN = (
+    '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" '
+    'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    'stroke-linejoin="round" style="vertical-align:-1px"><rect x="4" y="3" '
+    'width="16" height="14" rx="3"/><path d="M4 11h16M9 17l-2 3M15 17l2 3"/>'
+    '<circle cx="8.5" cy="7" r="0.5" fill="currentColor"/>'
+    '<circle cx="15.5" cy="7" r="0.5" fill="currentColor"/></svg>'
+)
+ICON_LOCATE = (
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" '
+    'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    'stroke-linejoin="round"><circle cx="12" cy="12" r="3"/>'
+    '<path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>'
+)
+
+MAIN_JS = r"""
+const FAV_KEY = 'mts_favorites_v1';
+
+function loadFavs() {
+  try { return JSON.parse(localStorage.getItem(FAV_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function saveFavs(favs) { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); }
+
+function refreshFavButtons() {
+  const favs = loadFavs();
+  document.querySelectorAll('.fav-btn').forEach(btn => {
+    const active = !!favs[btn.dataset.favId];
+    btn.classList.toggle('active', active);
+    btn.textContent = active ? '★' : '☆';
+  });
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function getActivePanel() {
+  const panels = document.querySelectorAll('.tab-panel');
+  const checked = document.querySelector('.tab-input:checked');
+  if (!checked) return panels[0];
+  const inputs = Array.from(document.querySelectorAll('.tab-input'));
+  return panels[inputs.indexOf(checked)] || panels[0];
+}
+
+function timeInRange(t, ranges) {
+  const h = parseInt(t.split(':')[0], 10);
+  return ranges.some(r => {
+    if (r === 'morning') return h < 12;
+    if (r === 'afternoon') return h >= 12 && h < 17;
+    if (r === 'evening') return h >= 17;
+    return false;
+  });
+}
+
+function applyFilters() {
+  const searchVal = document.getElementById('searchBox').value.trim().toLowerCase();
+  const activeAreas = Array.from(document.querySelectorAll('.chip[data-area].active')).map(c => c.dataset.area);
+  const activeTimes = Array.from(document.querySelectorAll('.chip[data-time-range].active')).map(c => c.dataset.timeRange);
+
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    let currentHeader = null;
+    let currentAreaVisible = false;
+    Array.from(panel.children).forEach(el => {
+      if (el.classList.contains('area-header')) {
+        if (currentHeader) currentHeader.style.display = currentAreaVisible ? '' : 'none';
+        currentHeader = el;
+        currentAreaVisible = false;
+        return;
+      }
+      if (!el.classList.contains('theater')) return;
+      const areaMatch = activeAreas.length === 0 || activeAreas.includes(el.dataset.area);
+      let theaterVisible = false;
+      el.querySelectorAll('.mv').forEach(mv => {
+        const title = mv.dataset.title || '';
+        const times = (mv.dataset.times || '').split(' ').filter(Boolean);
+        const searchMatch = !searchVal || title.includes(searchVal);
+        const timeMatch = activeTimes.length === 0 || times.some(t => timeInRange(t, activeTimes));
+        const visible = searchMatch && timeMatch && areaMatch;
+        mv.classList.toggle('mv-hidden', !visible);
+        if (visible) theaterVisible = true;
+      });
+      el.style.display = theaterVisible ? '' : 'none';
+      if (theaterVisible) currentAreaVisible = true;
+    });
+    if (currentHeader) currentHeader.style.display = currentAreaVisible ? '' : 'none';
+  });
+
+  const anyFilter = !!(searchVal || activeAreas.length || activeTimes.length);
+  const statusEl = document.getElementById('filterStatus');
+  statusEl.hidden = !anyFilter;
+  if (anyFilter) {
+    const activePanel = getActivePanel();
+    const visible = activePanel.querySelectorAll('.mv:not(.mv-hidden)').length;
+    const all = activePanel.querySelectorAll('.mv').length;
+    document.getElementById('filterCount').textContent = visible + '件 / 全' + all + '件';
+  }
+}
+
+function renderMylist() {
+  const favs = loadFavs();
+  const body = document.getElementById('mylistBody');
+  const ids = Object.keys(favs);
+  if (ids.length === 0) {
+    body.innerHTML = '<p class="mylist-empty">★パタンで気になる作品を登録すると、上映館と時間がここに表示されます。</p>';
+    return;
+  }
+  const showingsByMovie = {};
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    const dateLabel = panel.dataset.dateLabel || '';
+    panel.querySelectorAll('.mv[data-movie-id]').forEach(mv => {
+      const id = mv.dataset.movieId;
+      if (!favs[id]) return;
+      const theater = mv.dataset.theater || '';
+      const times = (mv.dataset.times || '').split(' ').filter(Boolean);
+      if (!showingsByMovie[id]) showingsByMovie[id] = [];
+      times.forEach(t => showingsByMovie[id].push({ dateLabel: dateLabel, theater: theater, time: t }));
+    });
+  });
+  let out = '';
+  ids.forEach(id => {
+    const title = (favs[id] && favs[id].title) || '(不明な作品)';
+    out += '<div class="mylist-item"><h3>' + escapeHtml(title) + '</h3>';
+    const showings = showingsByMovie[id];
+    if (showings && showings.length) {
+      showings.forEach(s => {
+        out += '<div class="mylist-showing"><span class="mylist-date">' + escapeHtml(s.dateLabel) +
+               '</span> <span class="mylist-theater">' + escapeHtml(s.theater) + '</span> ' + escapeHtml(s.time) + '</div>';
+      });
+    } else {
+      out += '<div class="mylist-none">現在の上映スケジュールには見つかりませんでした</div>';
+    }
+    out += '</div>';
+  });
+  body.innerHTML = out;
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+let panelOriginalOrder = null;
+function captureOriginalOrder() {
+  panelOriginalOrder = new Map();
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panelOriginalOrder.set(panel, Array.from(panel.children));
+  });
+}
+
+function sortByDistance(lat, lon) {
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.querySelectorAll('.area-header').forEach(h => { h.style.display = 'none'; });
+    const theaters = Array.from(panel.querySelectorAll('.theater[data-lat][data-lng]'));
+    theaters.forEach(t => {
+      const d = haversineKm(lat, lon, parseFloat(t.dataset.lat), parseFloat(t.dataset.lng));
+      t.dataset.distance = d.toFixed(1);
+      const distEl = t.querySelector('.th-dist');
+      if (distEl) {
+        distEl.innerHTML = DIST_ICON_HTML + ' 現在地から ' + d.toFixed(1) + 'km';
+        distEl.hidden = false;
+      }
+    });
+    theaters.sort((a, b) => parseFloat(a.dataset.distance) - parseFloat(b.dataset.distance));
+    theaters.forEach(t => panel.appendChild(t));
+  });
+}
+
+function restoreOriginalOrder() {
+  if (!panelOriginalOrder) return;
+  panelOriginalOrder.forEach((children, panel) => {
+    children.forEach(c => panel.appendChild(c));
+  });
+  document.querySelectorAll('.th-dist').forEach(d => { d.hidden = true; d.textContent = ''; });
+  applyFilters();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  refreshFavButtons();
+  captureOriginalOrder();
+  applyFilters();
+
+  document.getElementById('searchBox').addEventListener('input', applyFilters);
+  document.querySelectorAll('.tab-input').forEach(inp => inp.addEventListener('change', applyFilters));
+
+  document.querySelectorAll('.chip[data-area], .chip[data-time-range]').forEach(chip => {
+    chip.addEventListener('click', () => { chip.classList.toggle('active'); applyFilters(); });
+  });
+
+  document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+    document.getElementById('searchBox').value = '';
+    document.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
+    applyFilters();
+  });
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.fav-btn');
+    if (!btn) return;
+    const id = btn.dataset.favId;
+    const favs = loadFavs();
+    if (favs[id]) {
+      delete favs[id];
+    } else {
+      favs[id] = { title: btn.dataset.favTitle, savedAt: new Date().toISOString() };
+    }
+    saveFavs(favs);
+    refreshFavButtons();
+    if (document.getElementById('mylistOverlay').classList.contains('open')) renderMylist();
+  });
+
+  document.getElementById('mylistBtn').addEventListener('click', () => {
+    renderMylist();
+    document.getElementById('mylistOverlay').classList.add('open');
+  });
+  document.getElementById('mylistClose').addEventListener('click', () => {
+    document.getElementById('mylistOverlay').classList.remove('open');
+  });
+  document.getElementById('mylistOverlay').addEventListener('click', e => {
+    if (e.target.id === 'mylistOverlay') e.target.classList.remove('open');
+  });
+
+  document.getElementById('nearbyBtn').addEventListener('click', () => {
+    const btn = document.getElementById('nearbyBtn');
+    if (btn.classList.contains('active')) {
+      btn.classList.remove('active');
+      restoreOriginalOrder();
+      return;
+    }
+    if (!navigator.geolocation) {
+      alert('この端末では位置情報を利用できません');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        sortByDistance(pos.coords.latitude, pos.coords.longitude);
+        btn.classList.add('active');
+      },
+      () => {
+        alert('位置情報を取得できませんでした。ブラウザの位置情報設定をご確認ください。');
+      },
+      { timeout: 8000 }
+    );
+  });
+});
+""".strip().replace("DIST_ICON_HTML", json.dumps(ICON_LOCATE))
+
+
+def build_full_html(date_str, area_chips_html, _unused2,
                     tab_panels, nav_links):
     """完全なHTMLドキュメントを生成。"""
     return f"""<!DOCTYPE html>
@@ -1178,39 +1561,106 @@ def build_full_html(date_str, _unused1, _unused2,
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mini Theater Schedule - {date_str}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Old+Mincho:wght@600&display=swap" rel="stylesheet">
 <style>
 :root {{
-  --bg: #0c0c0f; --card: #16161a; --card-head: #1a1a2e;
-  --border: #2a2a35; --text: #e2e2e8; --sub: #8888a0;
-  --accent: #f5a623; --link: #6eaaff; --time-bg: #2a1f0a;
+  --bg: #0a0a0c; --bg-soft: #0f0f12;
+  --card: #141417; --card-head: #191a1e;
+  --border: #232327; --border-soft: #1b1b1f;
+  --text: #ececec; --sub: #85818a; --faint: #52505a;
+  --gold: #d4a24c; --gold-deep: #8f6c2e; --gold-glow: rgba(212,162,76,.14);
+  --link: #9db4d6;
+  --serif: 'Zen Old Mincho', serif;
+  --sans: 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont,
+          'Hiragino Sans', 'Noto Sans JP', 'Segoe UI', sans-serif;
 }}
 * {{ margin:0; padding:0; box-sizing:border-box; }}
+html {{ background: var(--bg); }}
 body {{
-  font-family: -apple-system,BlinkMacSystemFont,"Hiragino Sans",
-               "Noto Sans JP","Segoe UI",sans-serif;
+  font-family: var(--sans);
   background: var(--bg); color: var(--text);
-  max-width: 720px; margin: 0 auto; padding: 0 12px 24px;
+  max-width: 720px; margin: 0 auto; padding: 0 0 40px;
   -webkit-font-smoothing: antialiased;
+  letter-spacing: .01em;
 }}
+a {{ -webkit-tap-highlight-color: transparent; }}
+/* --- Header --- */
 .hdr {{
-  position: sticky; top: 0; z-index: 10;
-  background: var(--bg); padding: 14px 0 10px;
-  border-bottom: 1px solid var(--border); text-align: center;
+  position: sticky; top: 0; z-index: 20;
+  background: linear-gradient(180deg, var(--bg) 82%, transparent);
+  backdrop-filter: blur(6px);
+  padding: 22px 16px 12px;
 }}
-.hdr h1 {{ font-size: 17px; font-weight: 700; letter-spacing: .5px; }}
-.hdr .date {{ font-size: 13px; color: var(--sub); margin-top: 2px; }}
+.hdr-top {{
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding-bottom: 14px; border-bottom: 1px solid var(--border-soft);
+}}
+.hdr-brand {{ display: flex; align-items: baseline; gap: 10px; }}
+.hdr h1 {{
+  font-family: var(--serif); font-size: 19px; font-weight: 600;
+  letter-spacing: .06em; color: var(--text);
+}}
+.hdr .kicker {{
+  font-size: 9px; font-weight: 700; letter-spacing: .22em;
+  color: var(--gold); text-transform: uppercase;
+}}
+.hdr .date {{
+  font-size: 11px; color: var(--sub); letter-spacing: .05em;
+  font-variant-numeric: tabular-nums;
+}}
+/* --- Toolbar --- */
+.toolbar {{ padding-top: 14px; }}
+.toolbar-row {{ display: flex; gap: 8px; }}
+.search-box {{
+  flex: 1; min-width: 0; background: var(--card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 14px; font-size: 13px; font-family: var(--sans);
+  transition: border-color .15s;
+}}
+.search-box:focus {{ outline: none; border-color: var(--gold-deep); }}
+.search-box::placeholder {{ color: var(--faint); }}
+.tool-btn {{
+  font-size: 11px; font-weight: 700; color: var(--sub);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 13px; cursor: pointer;
+  white-space: nowrap; letter-spacing: .03em;
+  transition: color .15s, border-color .15s, background .15s;
+}}
+.tool-btn:hover {{ color: var(--text); border-color: var(--faint); }}
+.tool-btn.active {{ color: var(--gold); border-color: var(--gold-deep); background: var(--gold-glow); }}
+.chip-row {{ display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }}
+.chip {{
+  font-size: 11px; font-weight: 600; color: var(--sub);
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 13px; cursor: pointer;
+  white-space: nowrap; transition: color .15s, border-color .15s, background .15s;
+}}
+.chip:hover {{ border-color: var(--faint); color: var(--text); }}
+.chip.active {{ color: var(--gold); border-color: var(--gold-deep); background: var(--gold-glow); }}
+.filter-status[hidden] {{ display: none; }}
+.filter-status {{
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; font-size: 11px; color: var(--sub); margin-top: 10px;
+  letter-spacing: .03em;
+}}
+.filter-status button {{
+  font-size: 11px; color: var(--gold); background: none; border: none;
+  cursor: pointer; font-weight: 600;
+}}
 /* --- Tabs --- */
-.tab-bar {{ display: flex; gap: 6px; justify-content: center;
-            padding: 10px 0 4px; flex-wrap: wrap; }}
+.tab-bar {{ display: flex; gap: 8px; padding: 4px 16px 0; flex-wrap: wrap; }}
 .tab-input {{ display: none; }}
 .tab-label {{
-  font-size: 12px; font-weight: 600; padding: 5px 12px;
-  border: 1px solid var(--border); border-radius: 10px;
-  color: var(--sub); cursor: pointer;
+  font-size: 11px; font-weight: 700; padding: 7px 16px;
+  border: 1px solid var(--border); border-radius: 20px;
+  color: var(--sub); cursor: pointer; letter-spacing: .04em;
+  transition: color .15s, border-color .15s, background .15s;
 }}
 .tab-input:checked + .tab-label {{
-  color: var(--accent); border-color: var(--accent);
-  background: var(--time-bg);
+  color: #0a0a0c; border-color: var(--gold);
+  background: var(--gold);
 }}
 .tab-panel {{ display: none; }}
 .tab-input:nth-of-type(1):checked ~ #p0 {{ display: block; }}
@@ -1218,94 +1668,200 @@ body {{
 .tab-input:nth-of-type(3):checked ~ #p2 {{ display: block; }}
 .tab-input:nth-of-type(4):checked ~ #p3 {{ display: block; }}
 .day-info {{
-  text-align: center; font-size: 11px; color: var(--sub);
-  padding: 6px 0; margin-top: 4px;
+  text-align: center; font-size: 10px; color: var(--faint);
+  letter-spacing: .15em; text-transform: uppercase;
+  padding: 16px 0 4px;
 }}
 /* --- Area Nav --- */
 .area-nav {{
-  display: flex; flex-wrap: wrap; gap: 6px;
-  padding: 8px 0; justify-content: center;
+  display: flex; flex-wrap: wrap; gap: 7px;
+  padding: 14px 16px 0;
 }}
 .nav-link {{
-  font-size: 11px; color: var(--link); text-decoration: none;
-  padding: 3px 8px; border: 1px solid var(--border);
-  border-radius: 10px; white-space: nowrap;
+  font-size: 11px; color: var(--sub); text-decoration: none;
+  padding: 4px 12px; border: 1px solid var(--border-soft);
+  border-radius: 20px; white-space: nowrap;
+  transition: color .15s, border-color .15s;
 }}
-.nav-link:hover {{ background: var(--card); }}
+.nav-link:hover {{ color: var(--gold); border-color: var(--gold-deep); }}
 .area-header {{
-  font-size: 13px; font-weight: 700; color: var(--accent);
-  background: var(--time-bg); padding: 6px 14px;
-  border-radius: 8px; margin-top: 20px; margin-bottom: 4px;
-  letter-spacing: 1px;
+  display: flex; align-items: baseline; gap: 10px;
+  font-family: var(--serif); font-size: 13px; font-weight: 600; color: var(--gold);
+  padding: 0 16px; margin-top: 32px; margin-bottom: 14px;
+  letter-spacing: .1em;
+}}
+.area-header::after {{
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
 }}
 .theater {{
-  background: var(--card); border-radius: 14px;
-  margin-top: 12px; overflow: hidden;
+  background: var(--card);
+  margin: 0 16px 14px; overflow: hidden;
   border: 1px solid var(--border);
+  border-radius: 2px;
+  transition: border-color .2s;
 }}
 .th-head {{
-  padding: 14px 16px 10px; background: var(--card-head);
-  border-bottom: 1px solid var(--border);
+  padding: 16px 18px 12px; background: var(--card-head);
+  border-bottom: 1px solid var(--border-soft);
+  position: relative;
 }}
-.th-head h2 {{ font-size: 15px; font-weight: 700; }}
+.th-head::before {{
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+  background: var(--gold-deep);
+}}
+.th-head h2 {{ font-size: 14px; font-weight: 700; letter-spacing: .02em; }}
 .th-meta {{
-  display: flex; flex-direction: column; gap: 1px;
-  font-size: 11px; color: var(--sub); margin-top: 5px;
+  display: flex; flex-direction: column; gap: 3px;
+  font-size: 10.5px; color: var(--sub); margin-top: 7px;
+  letter-spacing: .01em;
 }}
-.th-links {{ margin-top: 6px; display: flex; gap: 12px; }}
+.th-dist {{ color: var(--gold); font-weight: 700; letter-spacing: .04em; }}
+.th-links {{ margin-top: 8px; display: flex; gap: 16px; }}
 .th-links a {{
-  font-size: 11px; color: var(--link);
-  text-decoration: none; font-weight: 500;
+  font-size: 10.5px; color: var(--link);
+  text-decoration: none; font-weight: 500; letter-spacing: .02em;
 }}
-.mv-list {{ padding: 6px 14px 10px; }}
+.th-links a:hover {{ color: var(--gold); }}
+.mv-list {{ padding: 4px 18px 6px; }}
 .mv {{
-  padding: 10px 0; border-bottom: 1px solid var(--border);
+  padding: 14px 0; border-bottom: 1px solid var(--border-soft);
 }}
+.mv.mv-hidden {{ display: none; }}
 .mv:last-child {{ border-bottom: none; }}
-.mv-head {{ display: flex; flex-direction: column; gap: 4px; }}
-.mv-times {{ display: flex; flex-wrap: wrap; gap: 5px; }}
+.mv-head {{ display: flex; flex-direction: column; gap: 6px; position: relative; }}
+.mv-times {{ display: flex; flex-wrap: wrap; gap: 6px; padding-right: 30px; }}
 .badge {{
-  display: inline-block; font-size: 13px; font-weight: 700;
-  color: var(--accent); background: var(--time-bg);
-  padding: 2px 8px; border-radius: 6px;
+  display: inline-block; font-size: 12px; font-weight: 700;
+  color: var(--gold); background: transparent;
+  border: 1px solid var(--gold-deep);
+  padding: 2px 9px; border-radius: 3px;
+  letter-spacing: .02em; font-variant-numeric: tabular-nums;
 }}
-.mv-title {{ font-size: 14px; font-weight: 600; line-height: 1.4; }}
+.mv-title {{ font-size: 14px; font-weight: 600; line-height: 1.5; padding-right: 30px; }}
 .mv-title-link {{ color: var(--text); text-decoration: none; }}
-.mv-title-link:hover {{ color: var(--link); }}
-.mv-details {{ margin-top: 5px; }}
+.mv-title-link:hover {{ color: var(--gold); }}
+.fav-btn {{
+  position: absolute; top: -2px; right: -4px; background: none; border: none;
+  font-size: 19px; line-height: 1; color: var(--faint); cursor: pointer;
+  padding: 6px; transition: color .15s, transform .15s;
+}}
+.fav-btn:hover {{ color: var(--gold-deep); }}
+.fav-btn.active {{ color: var(--gold); }}
+.mv-details {{ margin-top: 7px; }}
 .mv-details summary {{
   list-style: none; cursor: pointer;
-  font-size: 12px; color: var(--sub); line-height: 1.55;
+  font-size: 12px; color: var(--sub); line-height: 1.7;
 }}
 .mv-details summary::-webkit-details-marker {{ display: none; }}
-.mv-details summary::after {{ content: " [+]"; font-size: 10px; color: #666; }}
+.mv-details summary::after {{ content: " 続きを読む"; font-size: 10px; color: var(--gold-deep); }}
 .mv-details[open] summary {{ display: none; }}
 .mv-desc-short {{
-  font-size: 12px; color: var(--sub); line-height: 1.55; margin-top: 5px;
+  font-size: 12px; color: var(--sub); line-height: 1.7; margin-top: 7px;
 }}
 .mv-desc-full {{
-  font-size: 12px; color: var(--sub); line-height: 1.55; margin-top: 0;
+  font-size: 12px; color: var(--sub); line-height: 1.7; margin-top: 0;
 }}
 .ftr {{
-  text-align: center; padding: 18px 0 8px;
-  font-size: 11px; color: #555;
-  border-top: 1px solid var(--border); margin-top: 12px;
+  text-align: center; padding: 40px 16px 8px;
+  font-size: 10px; color: var(--faint);
+  letter-spacing: .04em;
 }}
+.ftr .ftr-rule {{
+  width: 40px; height: 1px; background: var(--border);
+  margin: 0 auto 16px;
+}}
+/* --- Mylist overlay --- */
+.mylist-overlay {{
+  display: none; position: fixed; inset: 0; background: rgba(6,6,8,.72);
+  z-index: 100; padding: 0; backdrop-filter: blur(2px);
+}}
+.mylist-overlay.open {{ display: block; }}
+.mylist-panel {{
+  background: var(--bg); max-width: 720px; margin: 0 auto;
+  height: 100%; overflow-y: auto; border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}}
+.mylist-head {{
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px; border-bottom: 1px solid var(--border-soft);
+  position: sticky; top: 0; background: var(--bg);
+}}
+.mylist-head h2 {{
+  font-family: var(--serif); font-size: 16px; font-weight: 600;
+  letter-spacing: .06em; color: var(--gold);
+}}
+.mylist-close {{
+  background: none; border: none; color: var(--sub); font-size: 20px;
+  cursor: pointer; padding: 4px;
+}}
+.mylist-close:hover {{ color: var(--text); }}
+.mylist-body {{ padding: 16px 20px 32px; }}
+.mylist-empty {{ color: var(--sub); font-size: 13px; text-align: center; padding: 60px 20px; line-height: 1.8; }}
+.mylist-item {{
+  background: var(--card); border: 1px solid var(--border);
+  padding: 16px 18px; margin-bottom: 12px; position: relative;
+}}
+.mylist-item::before {{
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+  background: var(--gold-deep);
+}}
+.mylist-item h3 {{ font-size: 14px; font-weight: 700; margin-bottom: 8px; letter-spacing: .02em; }}
+.mylist-showing {{ font-size: 12px; color: var(--sub); padding: 4px 0; }}
+.mylist-date {{ color: var(--gold); font-weight: 700; }}
+.mylist-theater {{ color: var(--text); }}
+.mylist-none {{ font-size: 12px; color: var(--faint); }}
 </style>
 </head>
 <body>
 <header class="hdr">
-  <h1>Mini Theater Schedule</h1>
-  <div class="date">{date_str}</div>
+  <div class="hdr-top">
+    <div class="hdr-brand">
+      <h1>Mini Theater</h1>
+      <span class="kicker">Schedule</span>
+    </div>
+    <div class="date">{date_str}</div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar-row">
+      <input type="search" id="searchBox" class="search-box" placeholder="作品名で検索">
+      <button id="nearbyBtn" class="tool-btn" aria-label="現在地から近い順">{ICON_LOCATE}</button>
+      <button id="mylistBtn" class="tool-btn" aria-label="マイリスト">&#9733;</button>
+    </div>
+    <div class="chip-row" id="areaChips">{area_chips_html}</div>
+    <div class="chip-row" id="timeChips">
+      <button class="chip" data-time-range="morning">午前</button>
+      <button class="chip" data-time-range="afternoon">午後</button>
+      <button class="chip" data-time-range="evening">夜</button>
+    </div>
+    <div class="filter-status" id="filterStatus" hidden>
+      <span id="filterCount"></span>
+      <button id="clearFiltersBtn">クリア</button>
+    </div>
+  </div>
 </header>
-<nav class="area-nav">{nav_links}</nav>
 <div class="tabs">
 {tab_panels}
 </div>
 <footer class="ftr">
-  {datetime.now(JST).strftime('%H:%M')} updated / source: eiga.com<br>
-  ※ schedules may change. check official sites.
+  <div class="ftr-rule"></div>
+  {datetime.now(JST).strftime('%H:%M')} updated &middot; source: eiga.com<br>
+  schedules may change &mdash; check official sites
 </footer>
+
+<div class="mylist-overlay" id="mylistOverlay">
+  <div class="mylist-panel">
+    <div class="mylist-head">
+      <h2>&#9733; マイリスト</h2>
+      <button id="mylistClose" class="mylist-close">&#10005;</button>
+    </div>
+    <div class="mylist-body" id="mylistBody"></div>
+  </div>
+</div>
+
+<script>
+{MAIN_JS}
+</script>
 </body>
 </html>"""
 

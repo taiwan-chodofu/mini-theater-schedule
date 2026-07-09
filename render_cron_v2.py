@@ -19,7 +19,7 @@ from theater_schedule import (
     THEATERS, HOLIDAYS_2026,
     is_holiday, get_target_dates, filter_by_time,
     get_area, build_movie_html, build_day_panel,
-    build_nav_links, build_full_html,
+    build_nav_links, build_area_chips, build_full_html,
     fetch_movie_description,
     today_jst,
 )
@@ -175,6 +175,7 @@ def collect_all():
                     "theater": name,
                     "station": info["station"],
                     "address": info["address"],
+                    "lat": info.get("lat"), "lng": info.get("lng"),
                     "url": info["url_top"],
                     "eigacom_url": info["eigacom_url"],
                     "title": "(fetch failed)",
@@ -207,6 +208,7 @@ def collect_all():
                     "theater": name,
                     "station": info["station"],
                     "address": info["address"],
+                    "lat": info.get("lat"), "lng": info.get("lng"),
                     "url": info["url_top"],
                     "eigacom_url": info["eigacom_url"],
                     "title": s["title"],
@@ -237,8 +239,10 @@ def collect_all():
 
 def generate_html(data):
     """HTMLを生成して返す。"""
+    import html as html_mod
     weekday_jp = "月火水木金土日"
     date_str = TODAY.strftime("%Y年%m月%d日")
+    area_chips_html = build_area_chips(data.values())
 
     if len(TARGET_DATES) == 1:
         d = TARGET_DATES[0]
@@ -247,31 +251,41 @@ def generate_html(data):
         tf = "18-22時" if is_wd else "終日"
         panel = build_day_panel(data[d], d_type, tf)
         nav = build_nav_links(data[d])
-        return build_full_html(date_str, "", "", panel, nav)
+        label = f"{d.month}/{d.day}({weekday_jp[d.weekday()]})"
+        tab_html = (
+            f'<div class="tab-panel" id="p0" data-date="{d.isoformat()}"'
+            f' data-date-label="{html_mod.escape(label)}" style="display:block">'
+            f'<nav class="area-nav">{nav}</nav>'
+            f'{panel}</div>\n'
+        )
+        return build_full_html(date_str, area_chips_html, "", tab_html, "")
     else:
         tab_inputs_labels = ""
         tab_panels = ""
         for idx, d in enumerate(TARGET_DATES):
             label = f"{d.month}/{d.day}({weekday_jp[d.weekday()]})"
+            d_id = f"tab{idx}"
             checked = " checked" if idx == 0 else ""
             is_wd = d.weekday() < 5 and d not in HOLIDAYS_2026
             d_type = "平日" if is_wd else "休日"
             tf = "18-22時" if is_wd else "終日"
-            panel = build_day_panel(data[d], d_type, tf)
-            nav_in = build_nav_links(data[d])
+            id_prefix = f"{d_id}-"
+            panel = build_day_panel(data[d], d_type, tf, id_prefix)
+            nav_in = build_nav_links(data[d], id_prefix)
             tab_inputs_labels += (
-                f'<input type="radio" name="tabs" id="tab{idx}"'
+                f'<input type="radio" name="tabs" id="{d_id}"'
                 f"{checked} class=\"tab-input\">\n"
-                f'<label for="tab{idx}" class="tab-label">{label}</label>\n'
+                f'<label for="{d_id}" class="tab-label">{label}</label>\n'
             )
             tab_panels += (
-                f'<div class="tab-panel" id="p{idx}">'
+                f'<div class="tab-panel" id="p{idx}" data-date="{d.isoformat()}"'
+                f' data-date-label="{html_mod.escape(label)}">'
                 f'<nav class="area-nav">{nav_in}</nav>'
                 f"{panel}</div>\n"
             )
         tab_html = tab_inputs_labels + tab_panels
         nav = ""
-        return build_full_html(date_str, "", "", tab_html, nav)
+        return build_full_html(date_str, area_chips_html, "", tab_html, nav)
 
 
 def push_github(html_content):
