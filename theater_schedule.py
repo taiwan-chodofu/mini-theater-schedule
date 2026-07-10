@@ -1195,8 +1195,10 @@ def build_movie_html(m, theater_name=""):
       <div class="mv" data-movie-id="{mid}" data-title="{title_esc.lower()}" data-times="{times_attr}" data-theater="{html.escape(theater_name)}">
         <div class="mv-head">
           <div class="mv-times">{badges}</div>
-          <h3 class="mv-title">{title_link}</h3>
-          <button class="fav-btn" data-fav-id="{mid}" data-fav-title="{title_esc}" aria-label="お気に入り登録">&#9734;</button>
+          <div class="mv-title-row">
+            <h3 class="mv-title">{title_link}</h3>
+            <button class="fav-btn" data-fav-id="{mid}" data-fav-title="{title_esc}" aria-label="この作品をお気に入りに登録">&#9734;</button>
+          </div>
         </div>
         {desc_html}
       </div>"""
@@ -1299,6 +1301,11 @@ ICON_LOCATE = (
     'stroke-linejoin="round"><circle cx="12" cy="12" r="3"/>'
     '<path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>'
 )
+ICON_BOOKMARK = (
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" '
+    'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    'stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4V3Z"/></svg>'
+)
 
 MAIN_JS = r"""
 const FAV_KEY = 'mts_favorites_v1';
@@ -1332,20 +1339,9 @@ function getActivePanel() {
   return panels[inputs.indexOf(checked)] || panels[0];
 }
 
-function timeInRange(t, ranges) {
-  const h = parseInt(t.split(':')[0], 10);
-  return ranges.some(r => {
-    if (r === 'morning') return h < 12;
-    if (r === 'afternoon') return h >= 12 && h < 17;
-    if (r === 'evening') return h >= 17;
-    return false;
-  });
-}
-
 function applyFilters() {
   const searchVal = document.getElementById('searchBox').value.trim().toLowerCase();
   const activeAreas = Array.from(document.querySelectorAll('.chip[data-area].active')).map(c => c.dataset.area);
-  const activeTimes = Array.from(document.querySelectorAll('.chip[data-time-range].active')).map(c => c.dataset.timeRange);
 
   document.querySelectorAll('.tab-panel').forEach(panel => {
     let currentHeader = null;
@@ -1362,10 +1358,8 @@ function applyFilters() {
       let theaterVisible = false;
       el.querySelectorAll('.mv').forEach(mv => {
         const title = mv.dataset.title || '';
-        const times = (mv.dataset.times || '').split(' ').filter(Boolean);
         const searchMatch = !searchVal || title.includes(searchVal);
-        const timeMatch = activeTimes.length === 0 || times.some(t => timeInRange(t, activeTimes));
-        const visible = searchMatch && timeMatch && areaMatch;
+        const visible = searchMatch && areaMatch;
         mv.classList.toggle('mv-hidden', !visible);
         if (visible) theaterVisible = true;
       });
@@ -1375,7 +1369,7 @@ function applyFilters() {
     if (currentHeader) currentHeader.style.display = currentAreaVisible ? '' : 'none';
   });
 
-  const anyFilter = !!(searchVal || activeAreas.length || activeTimes.length);
+  const anyFilter = !!(searchVal || activeAreas.length);
   const statusEl = document.getElementById('filterStatus');
   statusEl.hidden = !anyFilter;
   if (anyFilter) {
@@ -1478,18 +1472,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.chip[data-area]').forEach(chip => {
     chip.addEventListener('click', () => {
-      chip.classList.toggle('active');
-      applyFilters();
-      const activeAreaChips = document.querySelectorAll('.chip[data-area].active');
-      if (chip.classList.contains('active') && activeAreaChips.length === 1) {
+      const wasActive = chip.classList.contains('active');
+      document.querySelectorAll('.chip[data-area].active').forEach(c => c.classList.remove('active'));
+      if (!wasActive) {
+        chip.classList.add('active');
+        applyFilters();
         const panel = getActivePanel();
         const header = panel.querySelector('.area-header[data-area="' + chip.dataset.area + '"]');
         if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        applyFilters();
       }
     });
-  });
-  document.querySelectorAll('.chip[data-time-range]').forEach(chip => {
-    chip.addEventListener('click', () => { chip.classList.toggle('active'); applyFilters(); });
   });
 
   document.getElementById('clearFiltersBtn').addEventListener('click', () => {
@@ -1628,8 +1622,15 @@ a {{ -webkit-tap-highlight-color: transparent; }}
 }}
 .tool-btn:hover {{ color: var(--text); border-color: var(--faint); }}
 .tool-btn.active {{ color: var(--gold); border-color: var(--gold-deep); background: var(--gold-glow); }}
-.chip-row {{ display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }}
+.chip-row {{
+  display: flex; gap: 7px; margin-top: 10px;
+  overflow-x: auto; scrollbar-width: none;
+  padding-bottom: 2px;
+  mask-image: linear-gradient(90deg, #000 92%, transparent);
+}}
+.chip-row::-webkit-scrollbar {{ display: none; }}
 .chip {{
+  flex: 0 0 auto;
   font-size: 11px; font-weight: 600; color: var(--sub);
   background: transparent; border: 1px solid var(--border);
   border-radius: 20px; padding: 5px 13px; cursor: pointer;
@@ -1715,8 +1716,8 @@ a {{ -webkit-tap-highlight-color: transparent; }}
 }}
 .mv.mv-hidden {{ display: none; }}
 .mv:last-child {{ border-bottom: none; }}
-.mv-head {{ display: flex; flex-direction: column; gap: 6px; position: relative; }}
-.mv-times {{ display: flex; flex-wrap: wrap; gap: 6px; padding-right: 30px; }}
+.mv-head {{ display: flex; flex-direction: column; gap: 6px; }}
+.mv-times {{ display: flex; flex-wrap: wrap; gap: 6px; }}
 .badge {{
   display: inline-block; font-size: 12px; font-weight: 700;
   color: var(--gold); background: transparent;
@@ -1724,13 +1725,14 @@ a {{ -webkit-tap-highlight-color: transparent; }}
   padding: 2px 9px; border-radius: 3px;
   letter-spacing: .02em; font-variant-numeric: tabular-nums;
 }}
-.mv-title {{ font-size: 14px; font-weight: 600; line-height: 1.5; padding-right: 30px; }}
+.mv-title-row {{ display: flex; align-items: flex-start; gap: 6px; }}
+.mv-title {{ flex: 1; font-size: 14px; font-weight: 600; line-height: 1.5; }}
 .mv-title-link {{ color: var(--text); text-decoration: none; }}
 .mv-title-link:hover {{ color: var(--gold); }}
 .fav-btn {{
-  position: absolute; top: -2px; right: -4px; background: none; border: none;
-  font-size: 19px; line-height: 1; color: var(--faint); cursor: pointer;
-  padding: 6px; transition: color .15s, transform .15s;
+  flex: 0 0 auto; background: none; border: none;
+  font-size: 18px; line-height: 1; color: var(--faint); cursor: pointer;
+  padding: 0 2px; margin-top: 1px; transition: color .15s, transform .15s;
 }}
 .fav-btn:hover {{ color: var(--gold-deep); }}
 .fav-btn.active {{ color: var(--gold); }}
@@ -1774,6 +1776,7 @@ a {{ -webkit-tap-highlight-color: transparent; }}
   position: sticky; top: 0; background: var(--bg);
 }}
 .mylist-head h2 {{
+  display: flex; align-items: center; gap: 8px;
   font-family: var(--serif); font-size: 16px; font-weight: 600;
   letter-spacing: .06em; color: var(--gold);
 }}
@@ -1812,14 +1815,9 @@ a {{ -webkit-tap-highlight-color: transparent; }}
     <div class="toolbar-row">
       <input type="search" id="searchBox" class="search-box" placeholder="作品名で検索">
       <button id="nearbyBtn" class="tool-btn" aria-label="現在地から近い順">{ICON_LOCATE}</button>
-      <button id="mylistBtn" class="tool-btn" aria-label="マイリスト">&#9733;</button>
+      <button id="mylistBtn" class="tool-btn" aria-label="お気に入り作品の一覧を見る">{ICON_BOOKMARK}</button>
     </div>
     <div class="chip-row" id="areaChips">{area_chips_html}</div>
-    <div class="chip-row" id="timeChips">
-      <button class="chip" data-time-range="morning">午前</button>
-      <button class="chip" data-time-range="afternoon">午後</button>
-      <button class="chip" data-time-range="evening">夜</button>
-    </div>
     <div class="filter-status" id="filterStatus" hidden>
       <span id="filterCount"></span>
       <button id="clearFiltersBtn">クリア</button>
@@ -1838,7 +1836,7 @@ a {{ -webkit-tap-highlight-color: transparent; }}
 <div class="mylist-overlay" id="mylistOverlay">
   <div class="mylist-panel">
     <div class="mylist-head">
-      <h2>&#9733; マイリスト</h2>
+      <h2>{ICON_BOOKMARK} マイリスト（お気に入り作品）</h2>
       <button id="mylistClose" class="mylist-close">&#10005;</button>
     </div>
     <div class="mylist-body" id="mylistBody"></div>
