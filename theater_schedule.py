@@ -1061,13 +1061,11 @@ def save_to_html(data):
         d_type = "平日" if is_wd else "休日"
         time_filter = "18-22時" if is_wd else "終日"
         items = data[d]
-        nav_links = build_nav_links(items)
         panel_html = build_day_panel(items, d_type, time_filter)
         d_label = f"{d.month}/{d.day}({weekday_jp[d.weekday()]})"
         tab_html = (
             f'<div class="tab-panel" id="p0" data-date="{d.isoformat()}"'
             f' data-date-label="{html.escape(d_label)}" style="display:block">'
-            f'<nav class="area-nav">{nav_links}</nav>'
             f'{panel_html}</div>\n'
         )
         html_content = build_full_html(
@@ -1087,7 +1085,6 @@ def save_to_html(data):
             time_filter = "18-22時" if is_wd else "終日"
             items = data[d]
             id_prefix = f"{d_id}-"
-            nav_in_panel = build_nav_links(items, id_prefix)
             panel_html = build_day_panel(items, d_type, time_filter, id_prefix)
             tab_inputs_labels += (
                 f'<input type="radio" name="tabs" id="{d_id}"'
@@ -1098,13 +1095,11 @@ def save_to_html(data):
             tab_panels += (
                 f'<div class="tab-panel" id="p{idx}" data-date="{d.isoformat()}"'
                 f' data-date-label="{html.escape(d_label)}">'
-                f'<nav class="area-nav">{nav_in_panel}</nav>'
                 f'{panel_html}</div>\n'
             )
         tab_html = tab_inputs_labels + tab_panels
-        nav_links = ""  # ナビは各パネル内に配置済み
         html_content = build_full_html(
-            date_str, area_chips_html, "", tab_html, nav_links
+            date_str, area_chips_html, "", tab_html, ""
         )
 
     filename = "index.html"
@@ -1269,15 +1264,6 @@ def build_day_panel(items, day_type, time_filter, id_prefix=""):
     return out
 
 
-def build_nav_links(items, id_prefix=""):
-    """エリアナビリンクを生成。"""
-    areas_present = set()
-    for item in items:
-        areas_present.add(get_area(item["station"]))
-    return "".join(
-        f'<a href="#area-{id_prefix}{html.escape(a)}" class="nav-link" data-area="{html.escape(a)}">{a}</a>'
-        for a in AREA_ORDER if a in areas_present
-    )
 
 
 def build_area_chips(all_items):
@@ -1490,7 +1476,19 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('searchBox').addEventListener('input', applyFilters);
   document.querySelectorAll('.tab-input').forEach(inp => inp.addEventListener('change', applyFilters));
 
-  document.querySelectorAll('.chip[data-area], .chip[data-time-range]').forEach(chip => {
+  document.querySelectorAll('.chip[data-area]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('active');
+      applyFilters();
+      const activeAreaChips = document.querySelectorAll('.chip[data-area].active');
+      if (chip.classList.contains('active') && activeAreaChips.length === 1) {
+        const panel = getActivePanel();
+        const header = panel.querySelector('.area-header[data-area="' + chip.dataset.area + '"]');
+        if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+  document.querySelectorAll('.chip[data-time-range]').forEach(chip => {
     chip.addEventListener('click', () => { chip.classList.toggle('active'); applyFilters(); });
   });
 
@@ -1672,18 +1670,6 @@ a {{ -webkit-tap-highlight-color: transparent; }}
   letter-spacing: .15em; text-transform: uppercase;
   padding: 16px 0 4px;
 }}
-/* --- Area Nav --- */
-.area-nav {{
-  display: flex; flex-wrap: wrap; gap: 7px;
-  padding: 14px 16px 0;
-}}
-.nav-link {{
-  font-size: 11px; color: var(--sub); text-decoration: none;
-  padding: 4px 12px; border: 1px solid var(--border-soft);
-  border-radius: 20px; white-space: nowrap;
-  transition: color .15s, border-color .15s;
-}}
-.nav-link:hover {{ color: var(--gold); border-color: var(--gold-deep); }}
 .area-header {{
   display: flex; align-items: baseline; gap: 10px;
   font-family: var(--serif); font-size: 13px; font-weight: 600; color: var(--gold);

@@ -19,7 +19,7 @@ from theater_schedule import (
     THEATERS, HOLIDAYS_2026,
     is_holiday, get_target_dates, filter_by_time,
     get_area, build_movie_html, build_day_panel,
-    build_nav_links, build_area_chips, build_full_html,
+    build_area_chips, build_full_html,
     fetch_movie_description,
     today_jst,
 )
@@ -250,12 +250,10 @@ def generate_html(data):
         d_type = "平日" if is_wd else "休日"
         tf = "18-22時" if is_wd else "終日"
         panel = build_day_panel(data[d], d_type, tf)
-        nav = build_nav_links(data[d])
         label = f"{d.month}/{d.day}({weekday_jp[d.weekday()]})"
         tab_html = (
             f'<div class="tab-panel" id="p0" data-date="{d.isoformat()}"'
             f' data-date-label="{html_mod.escape(label)}" style="display:block">'
-            f'<nav class="area-nav">{nav}</nav>'
             f'{panel}</div>\n'
         )
         return build_full_html(date_str, area_chips_html, "", tab_html, "")
@@ -271,7 +269,6 @@ def generate_html(data):
             tf = "18-22時" if is_wd else "終日"
             id_prefix = f"{d_id}-"
             panel = build_day_panel(data[d], d_type, tf, id_prefix)
-            nav_in = build_nav_links(data[d], id_prefix)
             tab_inputs_labels += (
                 f'<input type="radio" name="tabs" id="{d_id}"'
                 f"{checked} class=\"tab-input\">\n"
@@ -280,12 +277,10 @@ def generate_html(data):
             tab_panels += (
                 f'<div class="tab-panel" id="p{idx}" data-date="{d.isoformat()}"'
                 f' data-date-label="{html_mod.escape(label)}">'
-                f'<nav class="area-nav">{nav_in}</nav>'
                 f"{panel}</div>\n"
             )
         tab_html = tab_inputs_labels + tab_panels
-        nav = ""
-        return build_full_html(date_str, area_chips_html, "", tab_html, nav)
+        return build_full_html(date_str, area_chips_html, "", tab_html, "")
 
 
 def push_github(html_content):
