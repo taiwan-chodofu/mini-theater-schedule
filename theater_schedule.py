@@ -1,10 +1,14 @@
 """
 都内近郊ミニシアター上映スケジュール取得スクリプト
 
-対象映画館:
-  イメージフォーラム、下高井戸シネマ、目黒シネマ、早稲田松竹、
-  キネカ大森、ストレンジャー、ユーロスペース、K's cinema、
-  武蔵野館、ジャック＆ベティ
+対象: 都内・横浜のミニシアター (詳細は下記 THEATERS dict)
+データソース: eiga.com (一部劇場は専用パーサで公式サイトから取得)
+
+2026-11-22 整備:
+  - シネスイッチ銀座 / 渋谷シネクイント / シネマハウス大塚 を完全削除 (閉館)
+  - 新宿武蔵野館 (休館中) + アテネ・フランセ文化センター / 国立映画アーカイブ /
+    アンスティチュ・フランセ東京 / 東京都写真美術館ホール (eiga.com 未掲載、公式スクレイパ
+    未実装) をコメントアウト。詳細は docs/TODO-official-scrapers.md
 
 出力: Excelファイル（日付付き）
 実行: py theater_schedule.py
@@ -72,12 +76,13 @@ THEATERS = {
         "station": "新宿駅（東口 徒歩3分）",
         "address": "東京都新宿区新宿3-35-13 3F",
     },
-    "新宿武蔵野館": {
-        "eigacom_url": "https://eiga.com/theater/13/130201/3026/",
-        "url_top": "https://shinjuku.musashino-k.jp/",
-        "station": "新宿駅（東口 徒歩2分）",
-        "address": "東京都新宿区新宿3-27-10 武蔵野ビル3F",
-    },
+    # --- 一時休館中 (2026-11-22 時点、再開次第有効化) ---
+    # "新宿武蔵野館": {
+    #     "eigacom_url": "https://eiga.com/theater/13/130201/3026/",
+    #     "url_top": "https://shinjuku.musashino-k.jp/",
+    #     "station": "新宿駅（東口 徒歩2分）",
+    #     "address": "東京都新宿区新宿3-27-10 武蔵野ビル3F",
+    # },
     "シネマ・ジャック＆ベティ": {
         "eigacom_url": "https://eiga.com/theater/14/140108/3247/",
         "url_top": "https://www.jackandbetty.net/",
@@ -115,12 +120,13 @@ THEATERS = {
         "station": "日比谷駅（東京メトロ 直結）",
         "address": "東京都千代田区有楽町1-1-2 東京ミッドタウン日比谷4F",
     },
-    "アテネ・フランセ文化センター": {
-        "eigacom_url": "https://eiga.com/theater/13/130614/3299/",
-        "url_top": "http://www.athenee.net/culturalcenter/",
-        "station": "御茶ノ水駅（JR 徒歩5分）",
-        "address": "東京都千代田区神田駿河台2-11 アテネ・フランセ4F",
-    },
+    # --- 公式スクレイパ未実装 (eiga.com に上映情報なし、docs/TODO-official-scrapers.md) ---
+    # "アテネ・フランセ文化センター": {
+    #     "eigacom_url": "https://eiga.com/theater/13/130614/3299/",
+    #     "url_top": "https://athenee.net/culturalcenter/",
+    #     "station": "御茶ノ水駅（JR 徒歩5分）",
+    #     "address": "東京都千代田区神田駿河台2-11 アテネ・フランセ4F",
+    # },
     "シネマリス": {
         "eigacom_url": "https://eiga.com/theater/13/130710/3331/",
         "url_top": "https://www.cinemairis.com/",
@@ -128,18 +134,14 @@ THEATERS = {
         "address": "東京都千代田区神田小川町3-14-3 ilusa B1F",
     },
     # --- 中央区 ---
-    "シネスイッチ銀座": {
-        "eigacom_url": "https://eiga.com/theater/13/130101/3005/",
-        "url_top": "https://www.cineswitch.com/",
-        "station": "銀座駅（東京メトロ 徒歩1分）",
-        "address": "東京都中央区銀座4-4-5",
-    },
-    "国立映画アーカイブ": {
-        "eigacom_url": "https://eiga.com/theater/13/130101/3300/",
-        "url_top": "https://www.nfaj.go.jp/",
-        "station": "京橋駅（東京メトロ 徒歩1分）",
-        "address": "東京都中央区京橋3-7-6",
-    },
+    # シネスイッチ銀座: 2026-11-22 閉館 (eiga.com は 410 Gone)、エントリ削除
+    # --- 公式スクレイパ未実装 (eiga.com に上映情報なし、docs/TODO-official-scrapers.md) ---
+    # "国立映画アーカイブ": {
+    #     "eigacom_url": "https://eiga.com/theater/13/130101/3300/",
+    #     "url_top": "https://www.nfaj.go.jp/",
+    #     "station": "京橋駅（東京メトロ 徒歩1分）",
+    #     "address": "東京都中央区京橋3-7-6",
+    # },
     # --- 新宿区（追加分） ---
     "シネマート新宿": {
         "eigacom_url": "https://eiga.com/theater/13/130201/3020/",
@@ -153,19 +155,21 @@ THEATERS = {
         "station": "新宿三丁目駅（東京メトロ 徒歩3分）",
         "address": "東京都新宿区新宿3-14-20 新宿テアトルビルB1F",
     },
-    "アンスティチュ・フランセ東京": {
-        "eigacom_url": "https://eiga.com/theater/13/130604/3310/",
-        "url_top": "https://www.institutfrancais.jp/tokyo/",
-        "station": "飯田橋駅（JR・東京メトロ 徒歩7分）",
-        "address": "東京都新宿区市谷船河原町15",
-    },
+    # --- 公式スクレイパ未実装 (eiga.com に上映情報なし、docs/TODO-official-scrapers.md) ---
+    # "アンスティチュ・フランセ東京": {
+    #     "eigacom_url": "https://eiga.com/theater/13/130604/3310/",
+    #     "url_top": "https://www.institutfrancais.jp/tokyo/",
+    #     "station": "飯田橋駅（JR・東京メトロ 徒歩7分）",
+    #     "address": "東京都新宿区市谷船河原町15",
+    # },
     # --- 目黒区 ---
-    "東京都写真美術館ホール": {
-        "eigacom_url": "https://eiga.com/theater/13/130608/3067/",
-        "url_top": "https://topmuseum.jp/",
-        "station": "恵比寿駅（JR 徒歩7分）",
-        "address": "東京都目黒区三田1-13-3 恵比寿ガーデンプレイス内",
-    },
+    # --- 公式スクレイパ未実装 (eiga.com に上映情報なし、docs/TODO-official-scrapers.md) ---
+    # "東京都写真美術館ホール": {
+    #     "eigacom_url": "https://eiga.com/theater/13/130608/3067/",
+    #     "url_top": "https://topmuseum.jp/",
+    #     "station": "恵比寿駅（JR 徒歩7分）",
+    #     "address": "東京都目黒区三田1-13-3 恵比寿ガーデンプレイス内",
+    # },
     # --- 世田谷区 ---
     "下北沢トリウッド": {
         "eigacom_url": "https://eiga.com/theater/13/130613/3277/",
@@ -204,12 +208,8 @@ THEATERS = {
         "station": "渋谷駅（道玄坂方面 徒歩10分）",
         "address": "東京都渋谷区円山町1-5 KINOHAUS 4F",
     },
-    "渋谷シネクイント": {
-        "eigacom_url": "https://eiga.com/theater/13/130301/3283/",
-        "url_top": "https://www.cinequinto.com/",
-        "station": "渋谷駅（ハチ公口 徒歩5分）",
-        "address": "東京都渋谷区宇田川町20-11 渋谷三葉ビル7F",
-    },
+    # 渋谷シネクイント: 2026-11-22 時点で「SPACE PART 3 by PARCO」にリブランド、エントリ削除
+    # (姉妹館「ホワイト シネクイント」は下記に単独で現存)
     "ホワイト シネクイント": {
         "eigacom_url": "https://eiga.com/theater/13/130301/3295/",
         "url_top": "https://white-cine-quinto.com/",
@@ -236,12 +236,7 @@ THEATERS = {
         "station": "池袋駅（東口 徒歩3分）",
         "address": "東京都豊島区東池袋1-43-5 マルハン池袋ビル3F",
     },
-    "シネマハウス大塚": {
-        "eigacom_url": "https://eiga.com/theater/13/130616/3311/",
-        "url_top": "https://cinemahouse-otsuka.com/",
-        "station": "大塚駅（JR 徒歩10分）",
-        "address": "東京都豊島区巣鴨4-7-4-101",
-    },
+    # シネマハウス大塚: 2026-11-22 時点で公式サイト DNS 失効、閉館濃厚のためエントリ削除
     # --- 北区 ---
     "CINEMA Chupki TABATA": {
         "eigacom_url": "https://eiga.com/theater/13/130717/3272/",
